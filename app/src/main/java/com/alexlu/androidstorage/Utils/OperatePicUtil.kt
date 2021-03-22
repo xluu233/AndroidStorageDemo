@@ -1,4 +1,4 @@
-package com.alexlu.androidstorage.Utils
+package com.venpoo.whalemuse.utils
 
 import android.annotation.SuppressLint
 import android.content.ContentResolver
@@ -8,16 +8,18 @@ import android.graphics.Bitmap
 import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
-import android.util.Log
-import android.widget.Toast
 import androidx.annotation.RequiresApi
 import com.alexlu.androidstorage.APP_NAME
+import com.alexlu.androidstorage.Utils.BitmapUtils
 import com.bumptech.glide.Glide
 import com.bumptech.glide.request.target.SimpleTarget
 import com.bumptech.glide.request.transition.Transition
+import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
+import io.reactivex.rxjava3.core.Observable
+import io.reactivex.rxjava3.core.ObservableOnSubscribe
+import io.reactivex.rxjava3.schedulers.Schedulers
 import java.io.*
 import kotlin.concurrent.thread
-
 
 
 object OperatePicUtil {
@@ -27,45 +29,49 @@ object OperatePicUtil {
      * TODO 保存图片到系统相册
      * @param context
      * @param picUrl 图片链接
-     * @param save2Public 是否保存到外部存储--公共区域
      */
     @SuppressLint("CheckResult")
-    fun savePicByUrl(context: Context, picUrl: String,save2Public:Boolean){
+    fun savePicByUrl(context: Context, picUrl: String){
         Glide.with(context).asBitmap().load(picUrl).into(object : SimpleTarget<Bitmap>() {
             override fun onResourceReady(resource: Bitmap, transition: Transition<in Bitmap>?) {
-                val destFile = createSaveFile(
-                    context,
-                    save2Public,
-                    "${System.currentTimeMillis()}.jpg",
-                    "AABBCC"
-                )
-                saveBitmap2SelfDirectroy(
-                    context,
-                    resource,
-                    destFile
-                )
+                Observable.create(ObservableOnSubscribe<Boolean> {
+                    val destFile = createSaveFile(
+                        context,
+                        "${System.currentTimeMillis()}.jpg"
+                    )
+                    saveFile(
+                        context,
+                        resource,
+                        destFile
+                    )
+
+                    it.onNext(true)
+                    it.onComplete()
+                }).subscribeOn(Schedulers.io()).observeOn(AndroidSchedulers.mainThread())
+                    .subscribe {
+                        if (it) {
+                            //toast("保存相册成功")
+                        }
+                    }
+
             }
         })
     }
 
-
     /**
      * TODO 保存Bitmap到系统相册
+     *
      * @param context
-     * @param picUrl 图片链接
-     * @param isUseExternalFilesDir 是否使用getExternalFilesDir,false为保存在sdcard根目录下
+     * @param bitmap
      */
     @SuppressLint("CheckResult")
-    fun savePicByBitmap(context: Context, bitmap: Bitmap, isUseExternalFilesDir:Boolean=false){
+    fun savePicByBitmap(context: Context, bitmap: Bitmap){
         thread(name = "savePic") {
             val destFile = createSaveFile(
                 context,
-                isUseExternalFilesDir,
-                "${System.currentTimeMillis()}.jpg",
-                APP_NAME
+                "${System.currentTimeMillis()}.jpg"
             )
-            Log.d("save2Public", isUseExternalFilesDir.toString())
-            saveBitmap2SelfDirectroy(
+            saveFile(
                 context,
                 bitmap,
                 destFile
@@ -73,6 +79,106 @@ object OperatePicUtil {
         }
     }
 
+
+
+    /**
+     * TODO 批量保存图片，适配AndroidQ以上，建议使用此方法
+     *
+     * @param context
+     * @param picList
+     * @param name
+     */
+    @SuppressLint("CheckResult")
+    fun saveListUrl(context: Context, picList: List<String>, name: String? = System.currentTimeMillis().toString()){
+        thread {
+            for (i in picList.size-1 downTo 0){
+                val picUrl = picList[i]
+                val bitmap = BitmapUtils.getBitmap(picUrl)
+
+                bitmap?.let {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                        saveBitAndroidQ(context,bitmap,"${name}_${i + 1}.png")
+                    }else{
+                        //saveBit(context,bitmap,"${name}_${i + 1}.png")
+                        val destFile = createSaveFile(context, "${name}_${i + 1}.png")
+                        saveFile(context, bitmap, destFile)
+                    }
+
+                }
+            }
+        }
+    }
+
+    /**
+     * TODO 保存图片（只使用于AndroidQ以下）
+     * 需要使用 android:requestLegacyExternalStorage="true"
+     * @param context
+     * @param bitmap
+     * @param fileName
+     */
+    private fun saveBit(context: Context, bitmap: Bitmap, fileName: String) {
+        val filePath = "${Environment.getExternalStorageDirectory().absolutePath}/" + "${Environment.DIRECTORY_PICTURES}"
+        //1.创建文件夹
+        val storagefile = File(filePath, APP_NAME)
+        if (!storagefile.exists()) {
+            storagefile.mkdirs()
+        }
+        //2.创建文件
+        val file = File(storagefile, fileName)
+        //3.写入文件
+        try {
+            val fos = FileOutputStream(file)
+            bitmap.compress(Bitmap.CompressFormat.JPEG, 100, fos)
+            fos.flush()
+            fos.close()
+        } catch (e: FileNotFoundException) {
+            e.printStackTrace()
+        } catch (e: IOException) {
+            e.printStackTrace()
+        }
+        //4.通知系统图库更新
+        val value = ContentValues()
+        value.put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg")
+        value.put(MediaStore.Images.Media.DATA, file.absolutePath)
+        context.contentResolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, value)
+    }
+
+
+    /**
+     * TODO 创建需要保存的文件
+     *  这里统一采用Android10之前的传统存储方式，保存在公共存储 Pictures/app_name 下面
+     */
+    private fun createSaveFile(context: Context, fileName: String): File {
+        val filePath = "${Environment.getExternalStorageDirectory().absolutePath}/" + "${Environment.DIRECTORY_PICTURES}"
+        //创建文件夹
+        val file = File(filePath, APP_NAME)
+        if (!file.exists()) {
+            file.mkdirs()
+        }
+        //创建文件
+        return File(file, fileName)
+    }
+
+    /**
+     * TODO 保存File并刷新相册
+     *
+     * @param context
+     * @param bitmap
+     * @param file
+     */
+    private fun saveFile(context: Context, bitmap: Bitmap, file: File) {
+        try {
+            val fos = FileOutputStream(file)
+            bitmap.compress(Bitmap.CompressFormat.JPEG, 100, fos)
+            fos.flush()
+            fos.close()
+        } catch (e: FileNotFoundException) {
+            e.printStackTrace()
+        } catch (e: IOException) {
+            e.printStackTrace()
+        }
+        refreshSystemPic(context, file)
+    }
 
     /**
      * 通知系统相册更新
@@ -86,38 +192,6 @@ object OperatePicUtil {
             value.put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg")
             value.put(MediaStore.Images.Media.DATA, destFile.absolutePath)
             context.contentResolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, value)
-        }
-    }
-
-    /**
-     * 创建需要保存的文件
-     * @param isUseExternalFilesDir 是否使用getExternalFilesDir,false为保存在sdcard根目录下
-     * @param fileName 保存文件名
-     * @param folderName 保存在sdcard根目录下的文件夹名（isUseExternalFilesDir=false时需要）
-     */
-    private fun createSaveFile(
-        context: Context,
-        isUseExternalFilesDir: Boolean,
-        fileName: String,
-        folderName: String?
-    ): File {
-        val filePath = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q || isUseExternalFilesDir) {
-            //外部存储私有区域：/storage/emulated/0/Android/data/packageName/files/Pictures
-            context.getExternalFilesDir(Environment.DIRECTORY_PICTURES)?.absolutePath!!
-        } else {
-            //外部存储公共区域：/storage/emulated/0/fileName
-            Environment.getExternalStorageDirectory().absolutePath
-        }
-        return if (isUseExternalFilesDir) {
-            File(filePath, fileName)
-        } else {
-            //创建文件夹
-            val file = File(filePath, folderName ?: context.packageName)
-            if (!file.exists()) {
-                file.mkdirs()
-            }
-            //写入文件
-            File(file, fileName)
         }
     }
 
@@ -187,36 +261,16 @@ object OperatePicUtil {
         }
     }
 
-    /**
-     * 保存图片至app私有目录
-     */
-    private fun saveBitmap2SelfDirectroy(context: Context, bitmap: Bitmap, file: File) {
-        try {
-            val fos = FileOutputStream(file)
-            bitmap.compress(Bitmap.CompressFormat.JPEG, 100, fos)
-            fos.flush()
-            fos.close()
-        } catch (e: FileNotFoundException) {
-            e.printStackTrace()
-        } catch (e: IOException) {
-            e.printStackTrace()
-        }
-        refreshSystemPic(context, file)
-    }
-
 
     /**
-     * TODO MediaStore插入图片
+     * TODO MediaStore插入图片到公共目录
      *
      * @param bitmap
      * @param displayName
      */
-    fun saveBitmapToPicturePublicFolder(
-        context: Context,
-        bitmap: Bitmap,
-    ) {
+    fun saveBitAndroidQ(context: Context,bitmap: Bitmap,fileName: String) {
         val contentValues = ContentValues()
-        contentValues.put(MediaStore.MediaColumns.DISPLAY_NAME, "${System.currentTimeMillis()}.jpg")
+        contentValues.put(MediaStore.MediaColumns.DISPLAY_NAME, fileName)
         contentValues.put(MediaStore.MediaColumns.MIME_TYPE, "image/jpeg")
         val path = getAppPicturePath()
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
@@ -234,7 +288,6 @@ object OperatePicUtil {
             outputStream?.also { os ->
                 bitmap.compress(Bitmap.CompressFormat.JPEG, 100, os)
                 os.close()
-                Toast.makeText(context, "添加图片成功", Toast.LENGTH_SHORT).show()
             }
         }
     }
@@ -242,10 +295,10 @@ object OperatePicUtil {
     private fun getAppPicturePath(): String {
         return if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
             // full path
-            "${Environment.getExternalStorageDirectory().absolutePath}/" + "${Environment.DIRECTORY_PICTURES}/$APP_NAME/"
+            "${Environment.getExternalStorageDirectory().absolutePath}/" + "${Environment.DIRECTORY_PICTURES}/${APP_NAME}/"
         } else {
             // relative path
-            "${Environment.DIRECTORY_PICTURES}/$APP_NAME/"
+            "${Environment.DIRECTORY_PICTURES}/${APP_NAME}/"
         }
     }
 

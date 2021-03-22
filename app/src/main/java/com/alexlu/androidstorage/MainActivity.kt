@@ -1,29 +1,22 @@
 package com.alexlu.androidstorage
 
 import android.Manifest
-import android.content.ContentValues
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.os.Build
 import android.os.Bundle
-import android.os.Environment
-import android.provider.MediaStore
 import android.view.View
-import android.widget.Toast
-import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
-import com.alexlu.androidstorage.Utils.BitmapUtils
-import com.alexlu.androidstorage.Utils.OperatePicUtil
 import com.alexlu.androidstorage.Utils.PdfUtils
 import com.alexlu.androidstorage.databinding.ActivityMainBinding
 import com.tbruyelle.rxpermissions3.RxPermissions
-import java.io.File
+import com.venpoo.whalemuse.utils.OperatePicUtil
 import java.io.IOException
 import java.io.InputStream
 
 
 
-const val APP_NAME = "ABC"
+const val APP_NAME = "ABC存储测试"
 
 
 class MainActivity : AppCompatActivity() {
@@ -65,13 +58,13 @@ class MainActivity : AppCompatActivity() {
             //OperatePicUtil.instance.savePicByBitmap(this,bitmap,false)
 
             //既然传统的File形势无法创建文件，我们可以利用MediaScope插入到公共文件夹
-            OperatePicUtil.saveBitmapToPicturePublicFolder(this,bitmap)
+            OperatePicUtil.saveBitAndroidQ(this,bitmap,"${System.currentTimeMillis()}.jpg")
             //以上就是将图片保存到 Pictures/AABBCC 目录下
 
         }else{
             RxPermissions(this).request(Manifest.permission.WRITE_EXTERNAL_STORAGE).subscribe {
                 if (it){
-                    OperatePicUtil.savePicByBitmap(this,bitmap,false)
+                    OperatePicUtil.savePicByBitmap(this,bitmap)
                 }else{
                     //权限被拒绝
                 }
@@ -88,11 +81,11 @@ class MainActivity : AppCompatActivity() {
     fun savePic2(view: View) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q){
             //理论上应该保存在私有目录下，这里有个bug,在私有目录和Picture目录下都保存了
-            OperatePicUtil.savePicByBitmap(this,bitmap,true)
+            OperatePicUtil.savePicByBitmap(this,bitmap)
         }else{
             RxPermissions(this).request(Manifest.permission.WRITE_EXTERNAL_STORAGE).subscribe {
                 if (it){
-                    OperatePicUtil.savePicByBitmap(this,bitmap,true)
+                    OperatePicUtil.savePicByBitmap(this,bitmap)
                 }else{
                     //权限被拒绝
                 }
@@ -111,13 +104,9 @@ class MainActivity : AppCompatActivity() {
         list.add(bitmap)
         list.add(bitmap)
 
-        RxPermissions(this).request(Manifest.permission.WRITE_EXTERNAL_STORAGE).subscribe {
+        RxPermissions(this).request(Manifest.permission.WRITE_EXTERNAL_STORAGE,Manifest.permission.READ_EXTERNAL_STORAGE).subscribe {
             if (it){
-                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
-                    PdfUtils.saveBitmapForPdf(list,"${System.currentTimeMillis()}.pdf",this)
-                }else{
-
-                }
+                PdfUtils.saveBitmapForPdf(list,"${System.currentTimeMillis()}.pdf",this)
             }else{
                 //权限被拒绝
             }

@@ -11,6 +11,7 @@ import android.os.Environment
 import android.print.PrintAttributes
 import android.provider.MediaStore
 import androidx.annotation.RequiresApi
+import androidx.core.net.toFile
 import com.alexlu.androidstorage.APP_NAME
 import java.io.*
 import java.net.HttpURLConnection
@@ -32,7 +33,7 @@ object PdfUtils {
      * @param fileName 文件名
      * @param context
      */
-    fun saveBitmapForPdf(bitmaps: ArrayList<Bitmap>, fileName: String, context: Context) {
+    fun saveBitmapForPdf(bitmaps: ArrayList<Bitmap>, fileName: String, context: Context): File? {
 
         val doc = PdfDocument()
         val pageWidth: Int = PrintAttributes.MediaSize.ISO_A4.getWidthMils() * 72 / 1000
@@ -54,7 +55,7 @@ object PdfUtils {
             val values = ContentValues()
             values.put(MediaStore.MediaColumns.DISPLAY_NAME, fileName)
             values.put(MediaStore.MediaColumns.RELATIVE_PATH,getDownloadPath())
-            val uri = context.contentResolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values)
+            val uri = context.contentResolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values)!!
 
             uri?.also {
                 val outputStream = context.contentResolver.openOutputStream(it)
@@ -77,15 +78,33 @@ object PdfUtils {
 
                 }
             }
+            return File(uri.toString())
 
         } else {
-            val storageDir: File? = context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS)
-            if (!storageDir?.exists()!!) {
+            //创建文件夹
+            val storageDir = File("${Environment.getExternalStorageDirectory().absolutePath}/" + "${Environment.DIRECTORY_DOWNLOADS}", APP_NAME)
+            if (!storageDir.exists()) {
                 storageDir.mkdir()
             }
-            val file = File(Environment.getExternalStorageDirectory(), fileName)
-
-
+            //创建文件
+            val file = File("${Environment.getExternalStorageDirectory().absolutePath}/" + "${Environment.DIRECTORY_DOWNLOADS}/$APP_NAME/", fileName)
+            var outputStream: FileOutputStream? = null
+            try {
+                outputStream = FileOutputStream(file)
+                doc.writeTo(outputStream)
+            } catch (e: FileNotFoundException) {
+                e.printStackTrace()
+            } catch (e: IOException) {
+                e.printStackTrace()
+            } finally {
+                doc.close()
+                try {
+                    outputStream?.close()
+                } catch (e: IOException) {
+                    e.printStackTrace()
+                }
+            }
+            return file
         }
 
     }
