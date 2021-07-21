@@ -3,20 +3,26 @@ package com.alexlu.androidstorage
 import android.Manifest
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
-import android.os.Build
+import android.net.Uri
 import android.os.Bundle
+import android.os.Environment
+import android.util.Log
 import android.view.View
 import androidx.appcompat.app.AppCompatActivity
-import com.alexlu.androidstorage.Utils.PdfUtils
+import androidx.core.content.FileProvider
+import com.alexlu.androidstorage.utils.PdfUtil
 import com.alexlu.androidstorage.databinding.ActivityMainBinding
+import com.alexlu.androidstorage.utils.FileSizeUtil
+import com.alexlu.androidstorage.util.FileUtil
 import com.tbruyelle.rxpermissions3.RxPermissions
-import com.venpoo.whalemuse.utils.OperatePicUtil
+import com.alexlu.androidstorage.util.PicturesUtil
+import java.io.File
 import java.io.IOException
 import java.io.InputStream
 
 
 
-const val APP_NAME = "ABC存储测试"
+const val TAG = "Android分区存储测试"
 
 
 class MainActivity : AppCompatActivity() {
@@ -29,8 +35,73 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
-
+        RxPermissions(this).request(Manifest.permission.WRITE_EXTERNAL_STORAGE,Manifest.permission.READ_EXTERNAL_STORAGE).subscribe {
+            if (it){
+                Log.d(TAG,"读写权限已获取")
+            }
+        }
+        showPath()
         getAsset()
+    }
+
+    //展示不同api获取到的路径
+    private fun showPath() {
+        val totalSize = FileSizeUtil.getTotalExternalMemorySize()
+        val totalSize2 = FileSizeUtil.getAvailableInternalMemorySize()
+
+        Log.d(TAG,"totalSize1:${FileSizeUtil.formatFileSize(totalSize,true)},size2:${FileSizeUtil.formatFileSize(totalSize2,true)}")
+
+        Log.d(TAG,Environment.getExternalStorageDirectory().absolutePath)
+        ///storage/emulated/0
+
+        Log.d(TAG,Environment.getRootDirectory().absolutePath)
+        ///system
+
+        Log.d(TAG,Environment.getDataDirectory().absolutePath)
+        ///data
+
+        Log.d(TAG,Environment.getDownloadCacheDirectory().absolutePath)
+        ///data/cache
+
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) {
+            Log.d(TAG,"getDownloadCacheDirectory():"+Environment.getStorageDirectory().absolutePath)
+            ///storage
+        }
+
+        Log.d(TAG,this.filesDir.absolutePath)
+        ///data/user/0/com.alexlu.androidstorage/files
+
+        Log.d(TAG,this.cacheDir.absolutePath)
+        ///data/user/0/com.alexlu.androidstorage/cache
+
+        Log.d(TAG,this.codeCacheDir.absolutePath)
+        ///data/user/0/com.alexlu.androidstorage/code_cache
+
+        Log.d(TAG,"externalCacheDir:"+this.externalCacheDir?.absolutePath)
+        ///storage/emulated/0/Android/data/com.alexlu.androidstorage/cache
+
+        this.externalMediaDirs.forEach {
+            Log.d(TAG,"externalMediaDirs:"+it.absolutePath)
+            ///storage/emulated/0/Android/media/com.alexlu.androidstorage
+        }
+
+        Log.d(TAG,"getExternalFilesDir:"+this.getExternalFilesDir(null)?.absolutePath)
+        ///storage/emulated/0/Android/data/com.alexlu.androidstorage/files
+
+
+
+
+        //预定义的一些常用目录
+        Log.d(TAG,Environment.DIRECTORY_PICTURES)
+        //Pictures
+        Log.d(TAG,Environment.DIRECTORY_DOWNLOADS)
+        //Download
+        Log.d(TAG,Environment.DIRECTORY_DCIM)
+        //DCIM
+        Log.d(TAG,Environment.DIRECTORY_MUSIC)
+        //Music
+        Log.d(TAG,Environment.DIRECTORY_MOVIES)
+        //Movies
     }
 
     private fun getAsset() {
@@ -47,70 +118,75 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+
     /**
-     * 保存图片
-     * 外部存储-公共空间
-     * 比如：sdcard/Pictures/
+     * TODO 保存图片到内存存储-私有目录下
      */
     fun savePic(view: View) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q){
-            //Android Q以上不需要权限，默认保存在Picture目录下，无法操作外部存储公共空间，即无法自行创建文件夹
-            //OperatePicUtil.instance.savePicByBitmap(this,bitmap,false)
+        //创建私有目录cache目录下文件
+        val file = File(FileUtil.getAppCachePath(this),"${System.currentTimeMillis()}.jpg")
 
-            //既然传统的File形势无法创建文件，我们可以利用MediaScope插入到公共文件夹
-            OperatePicUtil.saveBitAndroidQ(this,bitmap,"${System.currentTimeMillis()}.jpg")
-            //以上就是将图片保存到 Pictures/AABBCC 目录下
+        //创建私有目录files->image目录下文件
+        val file2 = File(FileUtil.getAppFilePath(this,"image"),"${System.currentTimeMillis()}.jpg")
 
-        }else{
-            RxPermissions(this).request(Manifest.permission.WRITE_EXTERNAL_STORAGE).subscribe {
-                if (it){
-                    OperatePicUtil.savePicByBitmap(this,bitmap)
-                }else{
-                    //权限被拒绝
-                }
-            }
-        }
+        PicturesUtil.saveBitmap2File(bitmap = bitmap,file = file)
+        PicturesUtil.saveBitmap2File(bitmap = bitmap,file = file2)
 
+
+        val uri1:Uri = FileProvider.getUriForFile(this,"com.alexlu.androidstorage.fileProvider",file)
+        Log.d(TAG,"uri1:${uri1}")
+        //uri1:content://com.alexlu.androidstorage.fileProvider/app_cache/1626865241315.jpg
+
+        val uri2:Uri = Uri.parse(file.absolutePath)
+        Log.d(TAG,"uri2:${uri2}")
+        //uri2:/data/user/0/com.alexlu.androidstorage/cache/1626865241315.jpg
     }
 
     /**
-     * 保存图片
-     * 外部存储-私有空间
-     * 比如：sdcard/Andord/data/packageName/files/Pictures
+     * TODO 保存图片到内存存储-私有目录下
+     * 一般图片保存在：sdcard/Pictures
      */
     fun savePic2(view: View) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q){
-            //理论上应该保存在私有目录下，这里有个bug,在私有目录和Picture目录下都保存了
-            OperatePicUtil.savePicByBitmap(this,bitmap)
-        }else{
-            RxPermissions(this).request(Manifest.permission.WRITE_EXTERNAL_STORAGE).subscribe {
-                if (it){
-                    OperatePicUtil.savePicByBitmap(this,bitmap)
-                }else{
-                    //权限被拒绝
-                }
-            }
-        }
+        //创建私有目录cache目录下文件
+        val file = File(FileUtil.getExternalPicturesPath("test"),"${System.currentTimeMillis()}.jpg")
+
+        PicturesUtil.saveBitmap2File(context = this,bitmap = bitmap,file = file,refreshAlbum = true)
+    }
+
+    fun savePic3(view: View) {
 
     }
 
 
-    /**
-     * 保存PDF文件到 Download/ABC 文件夹下
-     */
     fun savePDF(view: View) {
         val list = arrayListOf<Bitmap>()
         list.add(bitmap)
         list.add(bitmap)
         list.add(bitmap)
 
-        RxPermissions(this).request(Manifest.permission.WRITE_EXTERNAL_STORAGE,Manifest.permission.READ_EXTERNAL_STORAGE).subscribe {
-            if (it){
-                PdfUtils.saveBitmapForPdf(list,"${System.currentTimeMillis()}.pdf",this)
-            }else{
-                //权限被拒绝
-            }
-        }
+        PdfUtil.saveBitmapForPdf(list,"${System.currentTimeMillis()}.pdf",this)
+    }
+
+
+
+    fun savePDF2(view: View) {
+        val list = arrayListOf<Bitmap>()
+        list.add(bitmap)
+        list.add(bitmap)
+        list.add(bitmap)
+
+        PdfUtil.saveBitmapForPdf(list,"${System.currentTimeMillis()}.pdf",this)
+    }
+
+
+
+    fun savePDF3(view: View) {
+        val list = arrayListOf<Bitmap>()
+        list.add(bitmap)
+        list.add(bitmap)
+        list.add(bitmap)
+
+        PdfUtil.saveBitmapForPdf(list,"${System.currentTimeMillis()}.pdf",this)
     }
 
 

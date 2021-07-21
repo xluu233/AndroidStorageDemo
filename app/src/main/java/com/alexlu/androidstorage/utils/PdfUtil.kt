@@ -1,4 +1,4 @@
-package com.alexlu.androidstorage.Utils
+package com.alexlu.androidstorage.utils
 
 import android.content.ContentValues
 import android.content.Context
@@ -10,31 +10,25 @@ import android.os.Build
 import android.os.Environment
 import android.print.PrintAttributes
 import android.provider.MediaStore
-import androidx.annotation.RequiresApi
-import androidx.core.net.toFile
-import com.alexlu.androidstorage.APP_NAME
+import com.alexlu.androidstorage.TAG
+import com.alexlu.androidstorage.util.FileUtil
 import java.io.*
-import java.net.HttpURLConnection
-import java.net.URL
-import kotlin.concurrent.thread
 
 /**
  * @ClassName PdfUtils
- * @Description TODO
+ * @Description PDF文件工具类
  * @Author AlexLu_1406496344@qq.com
  * @Date 2021/3/19 17:33
  */
-object PdfUtils {
+object PdfUtil {
+
+    const val pdf_save_path = "ABC啦啦啦"
 
     /**
-     * TODO 将Bitmap保存为PDF文件在Download目录下
-     *
-     * @param bitmaps
-     * @param fileName 文件名
-     * @param context
+     * TODO Bitmap保存为PDF文件
+     * 目录：外部存储->Download->pdf_save_path
      */
     fun saveBitmapForPdf(bitmaps: ArrayList<Bitmap>, fileName: String, context: Context): File? {
-
         val doc = PdfDocument()
         val pageWidth: Int = PrintAttributes.MediaSize.ISO_A4.getWidthMils() * 72 / 1000
         val scale = pageWidth.toFloat() / bitmaps[0].width.toFloat()
@@ -54,9 +48,8 @@ object PdfUtils {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             val values = ContentValues()
             values.put(MediaStore.MediaColumns.DISPLAY_NAME, fileName)
-            values.put(MediaStore.MediaColumns.RELATIVE_PATH,getDownloadPath())
-            val uri = context.contentResolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values)!!
-
+            values.put(MediaStore.MediaColumns.RELATIVE_PATH, getDownloadPath())
+            val uri = context.contentResolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values)
             uri?.also {
                 val outputStream = context.contentResolver.openOutputStream(it)
                 outputStream?.also { os ->
@@ -70,7 +63,7 @@ object PdfUtils {
                         doc.close()
                         os.close()
                         try {
-                            outputStream?.close()
+                            outputStream.close()
                         } catch (e: IOException) {
                             e.printStackTrace()
                         }
@@ -81,13 +74,8 @@ object PdfUtils {
             return File(uri.toString())
 
         } else {
-            //创建文件夹
-            val storageDir = File("${Environment.getExternalStorageDirectory().absolutePath}/" + "${Environment.DIRECTORY_DOWNLOADS}", APP_NAME)
-            if (!storageDir.exists()) {
-                storageDir.mkdir()
-            }
-            //创建文件
-            val file = File("${Environment.getExternalStorageDirectory().absolutePath}/" + "${Environment.DIRECTORY_DOWNLOADS}/$APP_NAME/", fileName)
+            val filePath = FileUtil.getExternalDownloadPath(pdf_save_path)
+            val file = File(filePath, fileName)
             var outputStream: FileOutputStream? = null
             try {
                 outputStream = FileOutputStream(file)
@@ -109,14 +97,13 @@ object PdfUtils {
 
     }
 
-
     private fun getDownloadPath(): String {
         return if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
             // full path
-            "${Environment.getExternalStorageDirectory().absolutePath}/" + "${Environment.DIRECTORY_DOWNLOADS}/$APP_NAME/"
+            "${Environment.getExternalStorageDirectory().absolutePath}/" + "${Environment.DIRECTORY_DOWNLOADS}/$pdf_save_path/"
         } else {
             // relative path
-            "${Environment.DIRECTORY_DOWNLOADS}/$APP_NAME/"
+            "${Environment.DIRECTORY_DOWNLOADS}/$pdf_save_path/"
         }
     }
 
