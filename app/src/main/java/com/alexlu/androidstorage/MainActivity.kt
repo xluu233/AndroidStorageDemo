@@ -12,7 +12,6 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.FileProvider
 import com.alexlu.androidstorage.util.PdfUtil
 import com.alexlu.androidstorage.databinding.ActivityMainBinding
-import com.alexlu.androidstorage.utils.FileSizeUtil
 import com.alexlu.androidstorage.util.FileUtil
 import com.tbruyelle.rxpermissions3.RxPermissions
 import com.alexlu.androidstorage.util.PicturesUtil
@@ -46,10 +45,6 @@ class MainActivity : AppCompatActivity() {
 
     //展示不同api获取到的路径
     private fun showPath() {
-        val totalSize = FileSizeUtil.getTotalExternalMemorySize()
-        val totalSize2 = FileSizeUtil.getAvailableInternalMemorySize()
-
-        Log.d(TAG,"totalSize1:${FileSizeUtil.formatFileSize(totalSize,true)},size2:${FileSizeUtil.formatFileSize(totalSize2,true)}")
 
         Log.d(TAG,Environment.getExternalStorageDirectory().absolutePath)
         ///storage/emulated/0
