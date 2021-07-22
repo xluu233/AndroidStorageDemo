@@ -10,7 +10,7 @@ import android.util.Log
 import android.view.View
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.FileProvider
-import com.alexlu.androidstorage.utils.PdfUtil
+import com.alexlu.androidstorage.util.PdfUtil
 import com.alexlu.androidstorage.databinding.ActivityMainBinding
 import com.alexlu.androidstorage.utils.FileSizeUtil
 import com.alexlu.androidstorage.util.FileUtil
@@ -89,8 +89,6 @@ class MainActivity : AppCompatActivity() {
         ///storage/emulated/0/Android/data/com.alexlu.androidstorage/files
 
 
-
-
         //预定义的一些常用目录
         Log.d(TAG,Environment.DIRECTORY_PICTURES)
         //Pictures
@@ -143,21 +141,32 @@ class MainActivity : AppCompatActivity() {
     }
 
     /**
-     * TODO 保存图片到内存存储-私有目录下
+     * TODO 保存图片到外部存储-公共目录
      * 一般图片保存在：sdcard/Pictures
      */
     fun savePic2(view: View) {
         //创建私有目录cache目录下文件
         val file = File(FileUtil.getExternalPicturesPath("test"),"${System.currentTimeMillis()}.jpg")
-
         PicturesUtil.saveBitmap2File(context = this,bitmap = bitmap,file = file,refreshAlbum = true)
     }
 
+    /**
+     * TODO 保存图片到外部存储-分区目录
+     */
     fun savePic3(view: View) {
+        ///sdcard/Android/data/com.alexlu.androidstorage/files
+        val file = File(FileUtil.getExternalAppFilePath(this,"这是子目录"),"${System.currentTimeMillis()}.jpg")
+        PicturesUtil.saveBitmap2File(context = this,bitmap = bitmap,file = file)
 
+        ///sdcard/Android/data/com.alexlu.androidstorage/cache
+        val file2 = File(FileUtil.getExternalAppCachePath(this),"${System.currentTimeMillis()}.jpg")
+        PicturesUtil.saveBitmap2File(context = this,bitmap = bitmap,file = file2)
     }
 
 
+    /**
+     * TODO 保存PDF文件
+     */
     fun savePDF(view: View) {
         val list = arrayListOf<Bitmap>()
         list.add(bitmap)
@@ -167,27 +176,6 @@ class MainActivity : AppCompatActivity() {
         PdfUtil.saveBitmapForPdf(list,"${System.currentTimeMillis()}.pdf",this)
     }
 
-
-
-    fun savePDF2(view: View) {
-        val list = arrayListOf<Bitmap>()
-        list.add(bitmap)
-        list.add(bitmap)
-        list.add(bitmap)
-
-        PdfUtil.saveBitmapForPdf(list,"${System.currentTimeMillis()}.pdf",this)
-    }
-
-
-
-    fun savePDF3(view: View) {
-        val list = arrayListOf<Bitmap>()
-        list.add(bitmap)
-        list.add(bitmap)
-        list.add(bitmap)
-
-        PdfUtil.saveBitmapForPdf(list,"${System.currentTimeMillis()}.pdf",this)
-    }
 
 
 }

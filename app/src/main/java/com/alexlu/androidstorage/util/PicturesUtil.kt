@@ -5,6 +5,7 @@ import android.content.ContentValues
 import android.content.Context
 import android.graphics.Bitmap
 import android.os.Build
+import android.os.Environment
 import android.provider.MediaStore
 import androidx.annotation.RequiresApi
 import java.io.*
@@ -17,8 +18,13 @@ object PicturesUtil {
 
     const val pic_save_path = "ABC啦啦啦"
 
+
     /**
      * TODO Bitmap保存为图片
+     * @param context
+     * @param bitmap 输入源
+     * @param file 输出文件
+     * @param refreshAlbum 是否刷新相册，刷新将会复制源文件到 SDcard->Pitures 目录并删除源文件
      */
     fun saveBitmap2File(context: Context?=null, bitmap: Bitmap?, file: File, refreshAlbum:Boolean = false) {
         try {
@@ -100,7 +106,8 @@ object PicturesUtil {
         values.put(MediaStore.Images.Media.DISPLAY_NAME, file.name)
         values.put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg")
         values.put(MediaStore.Images.Media.TITLE, "Image.jpg")
-        values.put(MediaStore.Images.Media.RELATIVE_PATH, "Pictures/${pic_save_path}/")
+        values.put(MediaStore.Images.Media.RELATIVE_PATH, getMediaStorePath())
+        //"Pictures/${pic_save_path}/"
 
         val external = MediaStore.Images.Media.EXTERNAL_CONTENT_URI
         val resolver: ContentResolver = context.contentResolver
@@ -125,6 +132,16 @@ object PicturesUtil {
         } finally {
             os?.close()
             if (deleteSource) file.delete()
+        }
+    }
+
+    private fun getMediaStorePath(): String {
+        return if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+            // full path
+            "${Environment.getExternalStorageDirectory().absolutePath}/" + "${Environment.DIRECTORY_PICTURES}/${pic_save_path}/"
+        } else {
+            // relative path
+            "${Environment.DIRECTORY_PICTURES}/${pic_save_path}/"
         }
     }
 

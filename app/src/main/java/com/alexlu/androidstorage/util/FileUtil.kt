@@ -138,6 +138,36 @@ object FileUtil {
     }
 
     /**
+     * TODO 分区存储-Cache目录
+     * @param context
+     * @param subDir 子目录文件夹名称
+     * @return
+     */
+    fun getExternalAppCachePath(context: Context,subDir: String?=null):String{
+        val path = StringBuilder(context.externalCacheDir?.absolutePath)
+        subDir?.let {
+            path.append(File.separator).append(it).append(File.separator)
+        }
+        val dir = File(path.toString())
+        if (!dir.exists()) dir.mkdir()
+        return path.toString()
+    }
+
+    /**
+     * TODO 分区存储-File目录
+     * @param context
+     * @param subDir 子目录文件夹名称
+     * @return
+     */
+    fun getExternalAppFilePath(context: Context,subDir: String?=null):String{
+        val path = context.getExternalFilesDir(subDir)?.absolutePath
+        val dir = File(path.toString())
+        if (!dir.exists()) dir.mkdir()
+        return path.toString()
+    }
+
+
+    /**
      * TODO Uri转File
      */
     fun uri2File(context: Context, uri: Uri): File? {

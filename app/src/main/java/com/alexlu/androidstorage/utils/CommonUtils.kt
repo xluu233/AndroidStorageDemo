@@ -3,7 +3,10 @@ package com.xlu.jepgturbo
 import android.content.Context
 import android.content.pm.PackageManager
 import android.media.ExifInterface
+import android.os.Build
+import android.os.Environment
 import androidx.core.app.ActivityCompat
+import com.alexlu.androidstorage.util.PdfUtil
 import java.io.*
 import java.text.SimpleDateFormat
 import java.util.*
@@ -46,3 +49,7 @@ fun getCurentTime(): String {
 fun Context.hasPermission(permission: String): Boolean {
     return ActivityCompat.checkSelfPermission(this, permission) == PackageManager.PERMISSION_GRANTED
 }
+
+
+
+

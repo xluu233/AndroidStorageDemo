@@ -1,4 +1,4 @@
-package com.alexlu.androidstorage.utils
+package com.alexlu.androidstorage.util
 
 import android.content.ContentValues
 import android.content.Context
@@ -10,8 +10,6 @@ import android.os.Build
 import android.os.Environment
 import android.print.PrintAttributes
 import android.provider.MediaStore
-import com.alexlu.androidstorage.TAG
-import com.alexlu.androidstorage.util.FileUtil
 import java.io.*
 
 /**
@@ -48,7 +46,7 @@ object PdfUtil {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             val values = ContentValues()
             values.put(MediaStore.MediaColumns.DISPLAY_NAME, fileName)
-            values.put(MediaStore.MediaColumns.RELATIVE_PATH, getDownloadPath())
+            values.put(MediaStore.MediaColumns.RELATIVE_PATH, getMediaStorePath())
             val uri = context.contentResolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values)
             uri?.also {
                 val outputStream = context.contentResolver.openOutputStream(it)
@@ -97,15 +95,13 @@ object PdfUtil {
 
     }
 
-    private fun getDownloadPath(): String {
+    private fun getMediaStorePath(): String {
         return if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
             // full path
-            "${Environment.getExternalStorageDirectory().absolutePath}/" + "${Environment.DIRECTORY_DOWNLOADS}/$pdf_save_path/"
+            "${Environment.getExternalStorageDirectory().absolutePath}/" + "${Environment.DIRECTORY_DOWNLOADS}/${pdf_save_path}/"
         } else {
             // relative path
-            "${Environment.DIRECTORY_DOWNLOADS}/$pdf_save_path/"
+            "${Environment.DIRECTORY_DOWNLOADS}/${pdf_save_path}/"
         }
     }
-
-
 }
