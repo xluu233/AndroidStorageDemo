@@ -5,8 +5,11 @@ import android.database.Cursor
 import android.net.Uri
 import android.os.Build
 import android.os.Environment
+import android.os.storage.StorageManager
 import android.provider.MediaStore
+import androidx.annotation.RequiresApi
 import androidx.core.content.FileProvider
+import androidx.core.content.getSystemService
 import com.xlu.jepgturbo.getCurentTime
 import java.io.*
 import java.util.*
@@ -19,7 +22,6 @@ import java.util.*
  * @Date 2021/7/12 16:11
  */
 object FileUtil {
-
 
     /**
      * TODO 私有目录-cache

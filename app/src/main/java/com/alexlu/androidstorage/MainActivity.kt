@@ -13,6 +13,7 @@ import androidx.core.content.FileProvider
 import com.alexlu.androidstorage.util.PdfUtil
 import com.alexlu.androidstorage.databinding.ActivityMainBinding
 import com.alexlu.androidstorage.util.FileUtil
+import com.alexlu.androidstorage.util.MediaStoreUtil
 import com.tbruyelle.rxpermissions3.RxPermissions
 import com.alexlu.androidstorage.util.PicturesUtil
 import java.io.File
@@ -171,6 +172,20 @@ class MainActivity : AppCompatActivity() {
         PdfUtil.saveBitmapForPdf(list,"${System.currentTimeMillis()}.pdf",this)
     }
 
+
+
+    fun testMediaStore(view: View) {
+        //获取相册图片
+/*        val result = MediaStoreUtil.getAlbumList(this)
+        result.forEach {
+            println("image uri is $it")
+        }*/
+
+
+
+        MediaStoreUtil.getVideoList(this)
+
+    }
 
 
 }

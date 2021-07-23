@@ -46,7 +46,11 @@ object BitmapUtil {
      * TODO Uri转Bitmap
      */
     fun convertToBitmap(uri: Uri?, context: Context): Bitmap? {
-        val bitmap = MediaStore.Images.Media.getBitmap(context.contentResolver, uri)
+        if (uri==null) return null
+        val fd = context.contentResolver.openFileDescriptor(uri, "r") ?: return null
+        val bitmap = BitmapFactory.decodeFileDescriptor(fd.fileDescriptor)
+        fd.close()
+        //val bitmap = MediaStore.Images.Media.getBitmap(context.contentResolver, uri)
         return bitmap
     }
 
