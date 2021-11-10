@@ -10,12 +10,12 @@ import android.util.Log
 import android.view.View
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.FileProvider
-import com.alexlu.androidstorage.util.PdfUtil
 import com.alexlu.androidstorage.databinding.ActivityMainBinding
-import com.alexlu.androidstorage.util.FileUtil
+import com.alexlu.androidstorage.file.PDFUtils
+import com.alexlu.androidstorage.util.FilePath
 import com.alexlu.androidstorage.util.MediaStoreUtil
 import com.tbruyelle.rxpermissions3.RxPermissions
-import com.alexlu.androidstorage.util.PicturesUtil
+import com.alexlu.androidstorage.file.PicturesUtil
 import java.io.File
 import java.io.IOException
 import java.io.InputStream
@@ -118,10 +118,10 @@ class MainActivity : AppCompatActivity() {
      */
     fun savePic(view: View) {
         //创建私有目录cache目录下文件
-        val file = File(FileUtil.getAppCachePath(this),"${System.currentTimeMillis()}.jpg")
+        val file = File(FilePath.getAppCachePath(),"${System.currentTimeMillis()}.jpg")
 
         //创建私有目录files->image目录下文件
-        val file2 = File(FileUtil.getAppFilePath(this,"image"),"${System.currentTimeMillis()}.jpg")
+        val file2 = File(FilePath.getAppFilePath("image"),"${System.currentTimeMillis()}.jpg")
 
         PicturesUtil.saveBitmap2File(bitmap = bitmap,file = file)
         PicturesUtil.saveBitmap2File(bitmap = bitmap,file = file2)
@@ -142,7 +142,7 @@ class MainActivity : AppCompatActivity() {
      */
     fun savePic2(view: View) {
         //创建私有目录cache目录下文件
-        val file = File(FileUtil.getExternalPicturesPath("test"),"${System.currentTimeMillis()}.jpg")
+        val file = File(FilePath.getExternalPicturesPath("test"),"${System.currentTimeMillis()}.jpg")
         PicturesUtil.saveBitmap2File(context = this,bitmap = bitmap,file = file,refreshAlbum = true)
     }
 
@@ -151,11 +151,11 @@ class MainActivity : AppCompatActivity() {
      */
     fun savePic3(view: View) {
         ///sdcard/Android/data/com.alexlu.androidstorage/files
-        val file = File(FileUtil.getExternalAppFilePath(this,"这是子目录"),"${System.currentTimeMillis()}.jpg")
+        val file = File(FilePath.getAppExternalFilePath("这是子目录"),"${System.currentTimeMillis()}.jpg")
         PicturesUtil.saveBitmap2File(context = this,bitmap = bitmap,file = file)
 
         ///sdcard/Android/data/com.alexlu.androidstorage/cache
-        val file2 = File(FileUtil.getExternalAppCachePath(this),"${System.currentTimeMillis()}.jpg")
+        val file2 = File(FilePath.getAppExternalFilePath(),"${System.currentTimeMillis()}.jpg")
         PicturesUtil.saveBitmap2File(context = this,bitmap = bitmap,file = file2)
     }
 
@@ -169,7 +169,7 @@ class MainActivity : AppCompatActivity() {
         list.add(bitmap)
         list.add(bitmap)
 
-        PdfUtil.saveBitmapForPdf(list,"${System.currentTimeMillis()}.pdf",this)
+        PDFUtils.saveBitmapForPdf(list,"${System.currentTimeMillis()}.pdf")
     }
 
 

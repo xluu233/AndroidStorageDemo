@@ -1,4 +1,4 @@
-package com.alexlu.androidstorage.util
+package com.alexlu.androidstorage.file
 
 import android.content.ContentResolver
 import android.content.ContentValues
@@ -8,6 +8,7 @@ import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
 import androidx.annotation.RequiresApi
+import com.alexlu.androidstorage.util.BitmapUtil
 import java.io.*
 
 
@@ -138,10 +139,10 @@ object PicturesUtil {
     private fun getMediaStorePath(): String {
         return if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
             // full path
-            "${Environment.getExternalStorageDirectory().absolutePath}/" + "${Environment.DIRECTORY_PICTURES}/${pic_save_path}/"
+            "${Environment.getExternalStorageDirectory().absolutePath}/" + "${Environment.DIRECTORY_PICTURES}/$pic_save_path/"
         } else {
             // relative path
-            "${Environment.DIRECTORY_PICTURES}/${pic_save_path}/"
+            "${Environment.DIRECTORY_PICTURES}/$pic_save_path/"
         }
     }
 
